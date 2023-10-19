@@ -15,6 +15,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     cover_image = models.ImageField(upload_to='cover_images/', null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
+    social_media_link = models.URLField(verbose_name='Link:', max_length=255,null=True, blank=True)
+
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

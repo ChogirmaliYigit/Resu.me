@@ -1,10 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.decorators import login_required
 
-from .models import User
+from .models import User, Post
 from .utils import get_profile_response, fetch_github_activity
+from django.views import View
 
+from rest_framework import generics
+from .serializers import *
+from rest_framework.permissions import * 
 
 def index(request):
     if request.user.is_authenticated:
@@ -24,7 +28,9 @@ def resume(request):
 
 @login_required
 def posts(request):
-    return get_profile_response(request, 'posts')
+    posts = Post.objects.all()
+
+    return get_profile_response(request, 'posts', {'posts': posts})
 
 
 @login_required
@@ -42,3 +48,43 @@ def activity(request):
 def logout(request):
     django_logout(request)
     return redirect('index')
+
+class BlogList(View):
+    def get(self, request):
+        posts = Post.objects.all()
+        return render(request, "templates/posts.html", {"posts": posts})
+
+    # def post(self, request):
+    #     post = get_object_or_404(Post)
+    #     title = request.POST.get('title')
+    #     description = request.POST.get('description')
+    #     image = request.POST.get('image')
+    #     reply_to = request.POST.get('reply_to')
+    #     Post.objects.create(title=title, description=description, image=image, reply_to=reply_to, post=post)
+
+
+class BlogDetail(View):
+    def get(self, request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        return render(request, 'templates/posts.html', {"post": post})
+    
+    def post(self, request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        user = request.POST.get('user')
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        image = request.POST.get('image')
+        reply_to = request.POST.get('reply_to')
+        Post.objects.create(user=request.user, title=title, description=description, image=image, reply_to=reply_to, post=post)
+        return redirect('detail', slug)
+
+# CRUD -----------------> POSTS
+class PostList(generics.ListCreateAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerialaizer
+    permission_classes = [IsAuthenticated]
+
+class PostDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Post.objects.all()
+    serializer_class = PostSerialaizer
+    permission_classes = [IsAuthenticated]
